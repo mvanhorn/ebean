@@ -50,9 +50,7 @@ public class AutoConfigureForTesting implements AutoConfigure {
     }
     String testPlatform = properties.getProperty("ebean.test.platform");
     log.log(DEBUG, "automatic testing config - with ebean.test.platform:{0} name:{1} environmentDb:{2}", testPlatform, config.getName(), environmentDb);
-    if (RunOnceMarker.isRun()) {
-      setupPlatform(environmentDb, config);
-    }
+    setupPlatform(environmentDb, config, RunOnceMarker.isRun());
   }
 
   @Override
@@ -119,7 +117,7 @@ public class AutoConfigureForTesting implements AutoConfigure {
   /**
    * Setup the platform for testing including docker as needed and adjusting datasource config as needed.
    */
-  private void setupPlatform(String db, DatabaseBuilder.Settings config) {
-    new PlatformAutoConfig(db, config).run();
+  private void setupPlatform(String db, DatabaseBuilder.Settings config, boolean firstRun) {
+    new PlatformAutoConfig(db, config, firstRun).run();
   }
 }

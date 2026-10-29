@@ -41,15 +41,21 @@ public class PlatformAutoConfig {
 
   private final DatabaseBuilder.Settings config;
   private final Properties properties;
+  private final boolean firstRun;
   private String db;
   private String platform;
   private PlatformSetup platformSetup;
   private String databaseName;
 
   public PlatformAutoConfig(String db, DatabaseBuilder.Settings config) {
+    this(db, config, true);
+  }
+
+  public PlatformAutoConfig(String db, DatabaseBuilder.Settings config, boolean firstRun) {
     this.db = db;
     this.config = config;
     this.properties = config.getProperties();
+    this.firstRun = firstRun;
   }
 
   /**
@@ -79,9 +85,13 @@ public class PlatformAutoConfig {
   }
 
   private void setupForTesting() {
-    // start containers in parallel
-    RedisSetup.run(properties);
-    allOf(runAsync(this::setupElasticSearch), runAsync(this::setupDatabase)).join();
+    if (firstRun) {
+      // start containers in parallel
+      RedisSetup.run(properties);
+      allOf(runAsync(this::setupElasticSearch), runAsync(this::setupDatabase)).join();
+    } else {
+      setupDatabase();
+    }
   }
 
   private void setupElasticSearch() {
@@ -89,9 +99,9 @@ public class PlatformAutoConfig {
   }
 
   private void setupDatabase() {
-    Config config = new Config(db, platform, databaseName, this.config);
+    Config config = new Config(db, platform, databaseName, this.config, firstRun);
     Properties dockerProperties = platformSetup.setup(config);
-    if (!dockerProperties.isEmpty()) {
+    if (firstRun && !dockerProperties.isEmpty()) {
       if (isDebug()) {
         log.log(INFO, "Docker properties: {0}", dockerProperties);
       } else {

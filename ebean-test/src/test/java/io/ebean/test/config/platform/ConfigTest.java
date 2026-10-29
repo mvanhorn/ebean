@@ -72,6 +72,37 @@ class ConfigTest {
     assertThat(dockerProperties.getProperty("postgis.extraDb.extensions")).isEqualTo("z");
   }
 
+  @Test
+  void repeatedSetup_reappliesDataSourceAndSkipsDdl() {
+    Properties properties = new Properties();
+    properties.setProperty("ebean.test.platform", "h2");
+    properties.setProperty("ebean.test.ddlMode", "dropCreate");
+
+    DatabaseBuilder firstBuilder = Database.builder();
+    firstBuilder.loadFromProperties(properties);
+    new PlatformAutoConfig(null, firstBuilder.settings(), true).run();
+
+    DataSourceBuilder firstDataSource = firstBuilder.settings().getDataSourceConfig();
+    assertThat(firstDataSource.settings().getUrl()).isEqualTo("jdbc:h2:mem:test_db");
+    assertThat(firstDataSource.settings().getUsername()).isEqualTo("sa");
+    assertThat(firstDataSource.settings().getPassword()).isEmpty();
+    assertThat(firstDataSource.settings().getDriver()).isEqualTo("org.h2.Driver");
+    assertThat(firstBuilder.settings().isDdlGenerate()).isTrue();
+    assertThat(firstBuilder.settings().isDdlRun()).isTrue();
+
+    DatabaseBuilder secondBuilder = Database.builder();
+    secondBuilder.loadFromProperties(properties);
+    new PlatformAutoConfig(null, secondBuilder.settings(), false).run();
+
+    DataSourceBuilder secondDataSource = secondBuilder.settings().getDataSourceConfig();
+    assertThat(secondDataSource.settings().getUrl()).isEqualTo("jdbc:h2:mem:test_db");
+    assertThat(secondDataSource.settings().getUsername()).isEqualTo("sa");
+    assertThat(secondDataSource.settings().getPassword()).isEmpty();
+    assertThat(secondDataSource.settings().getDriver()).isEqualTo("org.h2.Driver");
+    assertThat(secondBuilder.settings().isDdlGenerate()).isFalse();
+    assertThat(secondBuilder.settings().isDdlRun()).isFalse();
+  }
+
 
   @Test
   void extraDbProperties_basic() {

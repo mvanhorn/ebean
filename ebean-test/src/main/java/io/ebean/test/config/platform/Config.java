@@ -38,16 +38,22 @@ class Config {
   private String username;
   private String password;
   private final DatabaseBuilder.Settings config;
+  private final boolean firstRun;
   private boolean containerDropCreate;
   private final Properties dockerProperties = new Properties();
 
   Config(String db, String platform, String databaseName, DatabaseBuilder.Settings config) {
+    this(db, platform, databaseName, config, true);
+  }
+
+  Config(String db, String platform, String databaseName, DatabaseBuilder.Settings config, boolean firstRun) {
     this.db = db;
     this.platform = platform;
     this.dockerPlatform = platform;
     this.databaseName = databaseName;
     this.config = config;
     this.properties = config.getProperties();
+    this.firstRun = firstRun;
   }
 
   /**
@@ -83,7 +89,7 @@ class Config {
   }
 
   void ddlMode(String defaultMode) {
-    String ddlMode = properties.getProperty("ebean.test.ddlMode", defaultMode);
+    String ddlMode = firstRun ? properties.getProperty("ebean.test.ddlMode", defaultMode) : "none";
     if (ddlMode == null) {
       throw new IllegalStateException("No ebean.test.ddlMode set?  Expect one of " + DDL_MODE_OPTIONS);
     }
